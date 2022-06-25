@@ -15,14 +15,11 @@ RUN set -eux; \
     cd /tmp; \
     ARCH="$(dpkg-architecture --query DEB_BUILD_GNU_CPU)"; \
     INSTALL_STACK="true"; \
-    STACK_URL="https://github.com/commercialhaskell/stack/releases/download/v${STACK}/stack-${STACK}-linux-$ARCH.tar.gz"; \
+    STACK_URL="https://downloads.haskell.org/~ghcup/unofficial-bindists/stack/${STACK}/stack-${STACK}-linux-$ARCH.tar.gz"; \
     # sha256 from https://github.com/commercialhaskell/stack/releases/download/v${STACK}/stack-${STACK}-linux-$ARCH.tar.gz.sha256
     case "$ARCH" in \
         'aarch64') \
-            # Stack does not officially support ARM64, nor do the binaries that exist work.
-            # Hitting https://github.com/commercialhaskell/stack/issues/2103#issuecomment-972329065 when trying to use
-            # stack-2.7.1-linux-aarch64.tar.gz
-            INSTALL_STACK="false"; \
+            STACK_SHA256='f362fa4786b17252004b2619ec96b9687e561dc4e55c2612c53d60be767cabba'; \
             ;; \
         'x86_64') \
             STACK_SHA256='9bcd165358d4dcafd2b33320d4fe98ce72faaf62300cc9b0fb86a27eb670da50'; \
@@ -33,13 +30,8 @@ RUN set -eux; \
         curl -sSL "$STACK_URL" -o stack.tar.gz; \
         echo "$STACK_SHA256 stack.tar.gz" | sha256sum --strict --check; \
         \
-        curl -sSL "$STACK_URL.asc" -o stack.tar.gz.asc; \
-        GNUPGHOME="$(mktemp -d)"; export GNUPGHOME; \
-        gpg --batch --keyserver keyserver.ubuntu.com --receive-keys "$STACK_RELEASE_KEY"; \
-        gpg --batch --verify stack.tar.gz.asc stack.tar.gz; \
-        gpgconf --kill all; \
-        \
-        tar -xf stack.tar.gz -C /usr/local/bin --strip-components=1 "stack-$STACK-linux-$ARCH/stack"; \
+        tar -xf stack.tar.gz -C /usr/local/bin "stack"; \
+        chmod a+x /usr/local/bin/stack; \
         stack config set system-ghc --global true; \
         stack config set install-ghc --global false; \
         \
